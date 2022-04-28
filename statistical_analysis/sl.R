@@ -39,11 +39,16 @@ df <- read_csv("input/data.csv")
 df %>% glimpse()
 df %>% colnames()
 
+df <- df %>% 
+  mutate_all(.funs = ~ as.numeric(.)) %>% 
+  mutate(eosi_a = wbc * eosi_p/100) %>% 
+  select(eosi_a, bun, rr, ams, hr, hot, wheeze, adl, death, steroid) 
+
 df_c <- df %>%
   drop_na()
 
 df_x <- df_c %>% 
-  select(2:4, 9:17, 25)
+  select(-death)
 
 df_x0 <- df_x %>% 
   mutate(steroid = 0)
@@ -57,19 +62,21 @@ df_xx <- df_x %>%
 
 ## G-computation
 fit_or <- glm(df_c$death ~ .,
-               data = df_x,
-               family = binomial())
+              data = df_x,
+              family = binomial())
 fit_or
 
-Qbar0W <- predict (fit_or,
-                   newdata = df_x0,
-                   type = "response")
-Qbar1W <- predict (fit_or,
-                   newdata = df_x1,
-                   type = "response")
+Qbar0W <- predict(fit_or,
+                  newdata = df_x0,
+                  type = "response")
+Qbar0W <- if_else(Qbar0W > .5, 1, 0)
 
-psi_nG1 <- mean (Qbar1W)
-psi_nG0 <- mean (Qbar0W)
+Qbar1W <- predict(fit_or,
+                  newdata = df_x1,
+                  type = "response")
+
+psi_nG0 <- mean(Qbar0W)
+psi_nG1 <- mean(Qbar1W)
 
 gamma_nG <- psi_nG1 - psi_nG0
 gamma_nG
