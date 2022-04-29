@@ -203,6 +203,8 @@ glm(death ~ steroid,
     weights = weights) %>% 
   tidy() 
 
+## entropy balancing
+
 ebal.out <- weightit(trt_form,
                      method = "ebal",
                      moments = 3,
@@ -223,6 +225,7 @@ glm(death ~ steroid,
     family = binomial(),
     weights = ebal_wt) %>% 
   tidy() 
+
 
 # SL ----------------------------------------------------------------------
 
@@ -306,6 +309,7 @@ ci1
 ci1 - ci0
 
 ## TMLE
+## doubly robust inference
 
 tmle <- drtmle(W = df_xx,
                A = df_x$steroid,
