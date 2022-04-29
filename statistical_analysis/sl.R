@@ -1,4 +1,8 @@
 
+### Caution!!!###
+## Just for demonstration ##
+## I wrote a "rough" code ##
+
 # Data preparation --------------------------------------------------------
 
 packages = c("devtools",
@@ -14,11 +18,17 @@ packages = c("devtools",
              "ggplotgui",
              "ggthemes",
              "arsenal",
+             "survey",
+             "broom",
+             "cobalt",
+             "WeightIt",
+             "MatchIt",
              "SuperLearner",
              "glmnet",
              "xgboost",
              "earth",
-             "drtmle")
+             "drtmle",
+             "mice")
 package.check <- lapply(packages, FUN = function(x){
   if (!require(x, character.only = TRUE)){
     install.packages(x, dependencies = TRUE)
@@ -43,6 +53,11 @@ df <- df %>%
   mutate_all(.funs = ~ as.numeric(.)) %>% 
   mutate(eosi_a = wbc * eosi_p/100) %>% 
   select(eosi_a, bun, rr, ams, hr, hot, wheeze, adl, death, steroid) 
+
+m <- 100 
+imp <- mice(df, m = m ,seed=12345 ,maxit=50 ,printFlag=FALSE)
+df_c <- complete(imp,action="long") %>% 
+  as_data_frame
 
 df_c <- df %>%
   drop_na()
@@ -127,6 +142,60 @@ gammaVec_ps <- replicate(M, {
 })
 
 quantile(gammaVec_ps, c(0.025, 0.975))
+
+#
+
+# Extra ----------------------------------------------------------------
+
+match_var <- colnames(select(df_c, -steroid, -death))
+out_var <-  colnames(select(df_c, -steroid, -death))
+trt_form <- f.build("steroid", match_var)
+out_form <- f.build("death", out_var)
+
+df_c <- df_c %>% 
+  mutate(steroid = case_when(steroid == 0 ~ "Non-steroid",
+                             steroid == 1 ~ "Steroid"))
+set.cobalt.options(binary = "std",
+                   un = TRUE,
+                   disp.v.ratio = TRUE,
+                   disp.ks = TRUE)
+
+t.test(death ~ steroid, data = df_c) %>% tidy
+
+e.match <- matchit(trt_form,
+                   data = df_c,
+                   method = "exact")
+summary(e.match)
+e.data <- match.data(e.match)
+
+glm(death ~ steroid,
+    data = e.data,
+    family = binomial(),
+    weights = weights) %>% 
+  tidy() %>% 
+  filter(term == "steroid")
+
+ebal.out <- weightit(trt_form,
+                     method = "ebal",
+                     moments = 3,
+                     data = df_c,
+                     estimand = "ATT")
+summary(ebal.out)
+love.plot(ebal.out,
+          stas= c("mean", "var", "ks"),
+          var.order = "unadjusted",
+          thresholds = c(.1, 2, .05),
+          line = TRUE)
+
+df_c <- df_c %>% 
+  mutate(ebal_wt = get.w(ebal.out))
+
+glm(death ~ steroid,
+    data = df_c,
+    family = binomial(),
+    weights = ebal_wt) %>% 
+  tidy() %>% 
+  filter(term == "steroid")
 
 # SL ----------------------------------------------------------------------
 
