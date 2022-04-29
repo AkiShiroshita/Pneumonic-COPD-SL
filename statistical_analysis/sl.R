@@ -57,7 +57,10 @@ df <- df %>%
 m <- 100 
 imp <- mice(df, m = m ,seed=12345 ,maxit=50 ,printFlag=FALSE)
 df_c <- complete(imp,action="long") %>% 
-  as_data_frame
+  as_tibble()
+
+df_c <- df_c %>% 
+  filter(.imp == 1) 
 
 df_c <- df %>%
   drop_na()
