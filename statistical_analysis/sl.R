@@ -85,19 +85,19 @@ df_xx <- df_x %>%
 
 ## for complete case analysis
 
-df_c <- df %>%
-  drop_na()
-
-df_x <- df_c %>% 
-  select(-death)
-
-df_x0 <- df_x %>% 
-  mutate(steroid = 0)
-df_x1 <- df_x %>% 
-  mutate(steroid = 1)
-
-df_xx <- df_x %>% 
-  select(-steroid)
+#df_c <- df %>%
+#  drop_na()
+#
+#df_x <- df_c %>% 
+#  select(-death)
+#
+#df_x0 <- df_x %>% 
+#  mutate(steroid = 0)
+#df_x1 <- df_x %>% 
+#  mutate(steroid = 1)
+#
+#df_xx <- df_x %>% 
+#  select(-steroid)
 
 # G-computation & IPTW ----------------------------------------------------
 
@@ -225,7 +225,6 @@ glm(death ~ steroid,
     family = binomial(),
     weights = ebal_wt) %>% 
   tidy() 
-
 
 # SL ----------------------------------------------------------------------
 
